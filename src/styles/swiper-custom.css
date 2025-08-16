@@ -1,0 +1,74 @@
+/* Custom Swiper Navigation */
+.swiper-button-next::after,
+.swiper-button-prev::after {
+  display: none; /* Hide default arrows */
+}
+
+/* Custom navigation buttons */
+.swiper-button-next,
+.swiper-button-prev {
+  width: 40px;
+  height: 40px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.8);
+}
+
+.swiper-button-next {
+  right: 0;
+}
+
+.swiper-button-prev {
+  left: 0;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  background: #E76F51;
+  color: white;
+  transform: scale(1);
+}
+
+/* Show navigation on container hover */
+.swiper-container:hover .swiper-button-next,
+.swiper-container:hover .swiper-button-prev {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .swiper-button-next,
+  .swiper-button-prev {
+    display: none; /* Hide on mobile */
+  }
+}
+
+/* Custom pagination */
+.swiper-pagination-bullet {
+  width: 10px;
+  height: 10px;
+  background: #E0E0E0;
+  opacity: 1;
+}
+
+.swiper-pagination-bullet-active {
+  background: #E76F51;
+  width: 30px;
+  border-radius: 5px;
+}
+
+/* Card hover effect */
+.swiper-slide {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.swiper-slide:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
