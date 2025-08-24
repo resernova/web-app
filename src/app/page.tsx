@@ -7,6 +7,13 @@ import Link from "next/link";
 import AssistantIcon from '@mui/icons-material/Assistant';
 import CopyrightIcon from '@mui/icons-material/Copyright';
 import WhyChoose from "@/components/WhyChoose";
+import dynamic from 'next/dynamic';
+
+// Dynamically import the TestSupabase component with SSR disabled
+const TestSupabase = dynamic(
+  () => import('@/components/TestSupabase'),
+  { ssr: false }
+);
 
 export default function Home() {
   return (
@@ -17,6 +24,9 @@ export default function Home() {
         <ExploreCategories />
         <TravelersFavorite />
         <WhyChoose />
+        {/* <div className="container mx-auto px-4 py-8">
+          <TestSupabase />
+        </div> */}
       </main>
       <footer className="relative">
         <div className="absolute bg-[#E76F51] text-black" />

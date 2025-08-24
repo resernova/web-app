@@ -8,25 +8,25 @@ const categories = [
         id: 1,
         name: "Accommodation",
         image: "/categories/accomodation.jpg",
-        link: "/accommodation"
+        link: "/categories/accommodation"
     },
     {
         id: 2,
         name: "Dining",
         image: "/categories/culinary.jpg",
-        link: "/dining"
+        link: "/categories/culinary"
     },
     {
         id: 3,
         name: "Wellness",
         image: "/categories/wellness.jpg",
-        link: "/wellness"
+        link: "/categories/wellness"
     },
     {
         id: 4,
         name: "Entertainments",
         image: "/categories/entertainment.jpg",
-        link: "/entertainments"
+        link: "/categories/entertainment"
     }
 ];
 
