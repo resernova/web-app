@@ -52,7 +52,7 @@ const navigationItems = [
   }
 ];
 
-export default function DashboardSidebar({ provider }: { provider: any }) {
+export default function DashboardSidebar({ currentView, onViewChange, provider }: DashboardSidebarProps) {
   const pathname = usePathname();
   const isActive = (path: string) => pathname === path;
   return (

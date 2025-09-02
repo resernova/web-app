@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { 
-  CalendarIcon, 
-  ClockIcon, 
-  CurrencyDollarIcon, 
+import {
+  CalendarIcon,
+  ClockIcon,
+  CurrencyDollarIcon,
   CubeIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
@@ -14,9 +14,10 @@ import {
 interface DashboardOverviewProps {
   provider: any;
   onCreateService: () => void;
+  onAddLocation: () => void;
 }
 
-export default function DashboardOverview({ provider, onCreateService }: DashboardOverviewProps) {
+export default function DashboardOverview({ provider, onCreateService, onAddLocation }: DashboardOverviewProps) {
   // Mock data - replace with real data from your API
   const stats = {
     todayBookings: 8,
@@ -65,21 +66,21 @@ export default function DashboardOverview({ provider, onCreateService }: Dashboa
       title: 'Add Location',
       description: 'Set up a new service location',
       icon: CalendarIcon,
-      action: () => {},
+      action: onAddLocation,
       color: 'from-blue-500 to-indigo-600'
     },
     {
       title: 'Invite Staff',
       description: 'Invite team members to help',
       icon: ClockIcon,
-      action: () => {},
+      action: () => { },
       color: 'from-green-500 to-emerald-600'
     },
     {
       title: 'Open Calendar',
       description: 'View and manage bookings',
       icon: CalendarIcon,
-      action: () => {},
+      action: () => { },
       color: 'from-purple-500 to-pink-600'
     }
   ];
@@ -200,7 +201,7 @@ export default function DashboardOverview({ provider, onCreateService }: Dashboa
               );
             })}
           </div>
-          
+
           <div className="mt-4 pt-4 border-t border-gray-200">
             <button className="text-sm text-[#E76F51] hover:text-[#D65A42] font-medium">
               View all notifications →
@@ -218,13 +219,13 @@ export default function DashboardOverview({ provider, onCreateService }: Dashboa
             <span className="text-sm text-gray-600">New booking received for "Luxury Spa Treatment"</span>
             <span className="text-xs text-gray-400 ml-auto">2 min ago</span>
           </div>
-          
+
           <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50">
             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
             <span className="text-sm text-gray-600">Service "City Tour Guide" published successfully</span>
             <span className="text-xs text-gray-400 ml-auto">15 min ago</span>
           </div>
-          
+
           <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50">
             <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
             <span className="text-sm text-gray-600">Payment received for booking #12345</span>

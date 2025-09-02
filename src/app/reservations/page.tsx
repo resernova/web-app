@@ -1,8 +1,8 @@
-export default function discover() {
+export default function booking() {
     return (
         <div>
             <h1>
-                Discover
+                Bookings
             </h1>
         </div>
     )

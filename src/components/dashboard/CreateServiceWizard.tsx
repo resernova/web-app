@@ -1,23 +1,27 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Plus, X, Check, Clock, Calendar, MapPin, Tag, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { z } from 'zod';
+import { Check, ChevronLeft, ChevronRight, Loader2, Plus, X } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { daysOfWeek, defaultAvailability } from '@/lib/types/service';
-import { fetchServiceCategories, fetchServiceProviderLocation } from '@/lib/services/categories';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
+
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Checkbox } from '../ui/checkbox';
+import { fetchServiceCategories, fetchServiceProviderLocation } from '@/lib/services/categories';
+import { DashboardView } from '@/app/dashboard/page';
+import { toast } from 'react-toastify';
 
-// Schema remains the same
 const serviceSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
@@ -32,8 +36,8 @@ const serviceSchema = z.object({
       isOpen: z.boolean(),
       slots: z.array(
         z.object({
-          open: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)'),
-          close: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)'),
+          open: z.string(),
+          close: z.string(),
         })
       ),
     })
@@ -42,15 +46,26 @@ const serviceSchema = z.object({
 
 type FormData = z.infer<typeof serviceSchema>;
 
-// Define fields for each step for targeted validation
-const step1Fields: (keyof FormData)[] = ['name', 'description', 'price', 'duration', 'duration_unit', 'category_id'];
-const step2Fields: (keyof FormData)[] = ['location_id'];
+const defaultAvailability = {
+  monday: { isOpen: false, slots: [{ open: '09:00', close: '17:00' }] },
+  tuesday: { isOpen: false, slots: [{ open: '09:00', close: '17:00' }] },
+  wednesday: { isOpen: false, slots: [{ open: '09:00', close: '17:00' }] },
+  thursday: { isOpen: false, slots: [{ open: '09:00', close: '17:00' }] },
+  friday: { isOpen: false, slots: [{ open: '09:00', close: '17:00' }] },
+  saturday: { isOpen: false, slots: [{ open: '09:00', close: '17:00' }] },
+  sunday: { isOpen: false, slots: [{ open: '09:00', close: '17:00' }] },
+};
 
-export function CreateServiceWizard({ onSuccess }: { onSuccess?: () => void }) {
-  const [step, setStep] = useState(1);
+const step1Fields = ['name', 'description', 'price', 'duration', 'duration_unit', 'category_id'] as const;
+const step2Fields = ['location_id'] as const;
+
+export function CreateServiceWizard({ onSuccess, setShowCreateService }: { onSuccess?: () => void, setShowCreateService?: (currentView: DashboardView) => void }) {
+  const [step, setStep] = useState<'1' | '2' | '3'>('1');
   const [categories, setCategories] = useState<{ category_id: string; name: string }[]>([]);
   const [locations, setLocations] = useState<{ location_id: string; address: string }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
   const { user, profile, provider, loading } = useAuth();
 
@@ -70,16 +85,14 @@ export function CreateServiceWizard({ onSuccess }: { onSuccess?: () => void }) {
       duration_unit: 'hours',
       price: 0,
     },
-    // Set mode to 'onTouched' to avoid showing errors too early
     mode: 'onTouched',
   });
 
-  // This hook is not needed in the CreateServiceWizard
-  // if (loading) return <div>Loading...</div>;
+
 
   useEffect(() => {
     const loadData = async () => {
-      if (!provider?.id) return; // Don't fetch if provider ID is not available
+      if (!provider?.id) return;
       try {
         const categoriesData = await fetchServiceCategories();
         setCategories(categoriesData);
@@ -91,116 +104,215 @@ export function CreateServiceWizard({ onSuccess }: { onSuccess?: () => void }) {
       }
     };
 
-    if (!loading) { // Only load data once auth context is resolved
+    if (!loading) {
       loadData();
     }
   }, [provider?.id, loading]);
 
   // The actual submission logic, called only when the final form is valid.
   const processSubmit = async (data: FormData) => {
-    setIsLoading(true);
+    setIsSubmitting(true);
+    setError(null);
+
     try {
       if (!provider) throw new Error('Service provider not found');
 
       const { location_id, ...serviceData } = data;
       const selectedLocation = locations.find((loc) => loc.location_id === location_id);
 
-      const { data: insertedData, error } = await supabase.from('services').insert([{
-        ...serviceData,
-        location: selectedLocation?.address,
-        provider_id: provider.id,
-      }]).select();
+      const { data: insertedData, error } = await supabase
+        .from('services')
+        .insert([{
+          ...serviceData,
+          location: selectedLocation?.address,
+          provider_id: provider.id,
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
 
-      console.log('Service created successfully:', insertedData);
-      onSuccess?.();
+      toast.success('Success! Service created successfully');
 
+      onSuccess?.();
     } catch (error) {
       console.error('Error creating service:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create service');
+      toast.error('Error, Failed to create service. Please try again.');
+      throw error;
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   const nextStep = async () => {
-    const fieldsToValidate = step === 1 ? step1Fields : step2Fields;
+    const fieldsToValidate = step === '1' ? step1Fields : step2Fields;
     const isValid = await trigger(fieldsToValidate, { shouldFocus: true });
 
     if (isValid) {
-      setStep((prev) => Math.min(prev + 1, 3));
+      setStep((prev) => (Number(prev) + 1).toString() as '1' | '2' | '3');
     }
   };
 
-  const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
+  const prevStep = () => setStep((prev) => (Number(prev) - 1).toString() as '1' | '2' | '3');
 
-  if (loading) return <div>Loading initial data...</div>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <span className="ml-2 text-sm font-medium">Loading service data...</span>
+      </div>
+    );
+  }
 
   return (
-    <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader>
-        <CardTitle>Create New Service</CardTitle>
-        <CardDescription>Step {step} of 3: {step === 1 ? 'Basic Information' : step === 2 ? 'Location' : 'Availability'}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {/* The form now calls processSubmit on final validation */}
-        <form onSubmit={(e) => e.preventDefault()}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && step < 3) e.preventDefault();
-          }}>
-          <div className="space-y-6">
-            {step === 1 && (
-              <div className="space-y-4 animate-in fade-in-0 duration-300">
-                <h3 className="text-lg font-medium">Basic Information</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Service Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="e.g., Professional Cleaning"
-                    {...register('name')}
-                  />
-                  {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
-                </div>
+    <div className="w-full max-w-3xl mx-auto">
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="border-b">
+          <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900">Create New Service</h3>
+              <p className="text-sm text-muted-foreground">
+                Step {step} of 3: {step === '1' ? 'Basic Information' : step === '2' ? 'Location' : 'Availability'}
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-sm"
+                onClick={() => setShowCreateService?.('overview')}
+                disabled={isLoading || isSubmitting}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe your service in detail..."
-                    className="min-h-[100px]"
-                    {...register('description')}
-                  />
-                  {errors.description && <p className="text-sm text-red-500">{errors.description.message}</p>}
+          {/* Progress Steps */}
+          <div className="pt-4">
+            <div className="flex items-center">
+              {[1, 2, 3].map((stepNum) => (
+                <div key={stepNum} className="flex items-center">
+                  <div
+                    className={cn(
+                      'flex items-center justify-center w-8 h-8 rounded-full',
+                      Number(step) >= stepNum
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-600',
+                      'text-sm font-medium'
+                    )}
+                  >
+                    {Number(step) > stepNum ? <Check className="h-4 w-4" /> : stepNum}
+                  </div>
+                  {stepNum < 3 && (
+                    <div className={cn(
+                      'h-0.5 w-12 mx-1',
+                      Number(step) > stepNum ? 'bg-blue-600' : 'bg-gray-200'
+                    )} />
+                  )}
                 </div>
+              ))}
+            </div>
+          </div>
+        </CardHeader>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Price ($)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      {...register('price', { valueAsNumber: true })}
-                    />
-                    {errors.price && <p className="text-sm text-red-500">{errors.price.message}</p>}
+        <CardContent className="p-6">
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          <form
+            onSubmit={handleSubmit(processSubmit)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && Number(step) < 3) e.preventDefault();
+            }}
+            className="space-y-6"
+          >
+            <div className="space-y-8">
+              {step === '1' && (
+                <div>
+                  <div className="mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">Service Details</h3>
+                    <p className="text-sm text-gray-500">Provide basic information about your service</p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Duration</Label>
-                    <div className="flex gap-2">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                        Service Name
+                      </Label>
                       <Input
-                        type="number"
-                        min="1"
-                        {...register('duration', { valueAsNumber: true })}
-                        className="w-20"
+                        id="name"
+                        {...register('name')}
+                        placeholder="e.g., Professional Photography"
+                        className={errors.name ? 'border-red-500' : ''}
                       />
-                      <Controller
-                        name="duration_unit"
-                        control={control}
-                        render={({ field }) => (
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <SelectTrigger className="w-[180px]">
+                      {errors.name && (
+                        <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                      </Label>
+                      <Textarea
+                        id="description"
+                        {...register('description')}
+                        placeholder="Describe your service in detail"
+                        rows={4}
+                        className={errors.description ? 'border-red-500' : ''}
+                      />
+                      {errors.description && (
+                        <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                          Price ($)
+                        </Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          {...register('price', { valueAsNumber: true })}
+                          placeholder="0.00"
+                          step="0.01"
+                          min="0"
+                          className={errors.price ? 'border-red-500' : ''}
+                        />
+                        {errors.price && (
+                          <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-1">
+                            Duration
+                          </Label>
+                          <Input
+                            id="duration"
+                            type="number"
+                            {...register('duration', { valueAsNumber: true })}
+                            placeholder="1"
+                            min="1"
+                            className={errors.duration ? 'border-red-500' : ''}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="duration_unit" className="block text-sm font-medium text-gray-700 mb-1">
+                            Unit
+                          </Label>
+                          <Select
+                            onValueChange={(value) => setValue('duration_unit', value as 'minutes' | 'hours' | 'days')}
+                            value={watch('duration_unit')}
+                          >
+                            <SelectTrigger className={errors.duration_unit ? 'border-red-500' : ''}>
                               <SelectValue placeholder="Select unit" />
                             </SelectTrigger>
                             <SelectContent>
@@ -209,22 +321,19 @@ export function CreateServiceWizard({ onSuccess }: { onSuccess?: () => void }) {
                               <SelectItem value="days">Days</SelectItem>
                             </SelectContent>
                           </Select>
-                        )}
-                      />
+                        </div>
+                      </div>
                     </div>
-                    {errors.duration && <p className="text-sm text-red-500">{errors.duration.message}</p>}
-                    {errors.duration_unit && <p className="text-sm text-red-500">{errors.duration_unit.message}</p>}
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Controller
-                    name="category_id"
-                    control={control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
+                    <div>
+                      <Label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">
+                        Category
+                      </Label>
+                      <Select
+                        onValueChange={(value) => setValue('category_id', value)}
+                        value={watch('category_id')}
+                      >
+                        <SelectTrigger className={errors.category_id ? 'border-red-500' : ''}>
                           <SelectValue placeholder="Select a category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -235,24 +344,31 @@ export function CreateServiceWizard({ onSuccess }: { onSuccess?: () => void }) {
                           ))}
                         </SelectContent>
                       </Select>
-                    )}
-                  />
-                  {errors.category_id && <p className="text-sm text-red-500">{errors.category_id.message}</p>}
+                      {errors.category_id && (
+                        <p className="mt-1 text-sm text-red-600">{errors.category_id.message}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {step === 2 && (
-              <div className="space-y-4 animate-in fade-in-0 duration-300">
-                <h3 className="text-lg font-medium">Location</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="location">Service Location</Label>
-                  <Controller
-                    name="location_id"
-                    control={control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
+              {step === '2' && (
+                <div>
+                  <div className="mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">Location</h3>
+                    <p className="text-sm text-gray-500">Where will this service be provided?</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="location_id" className="block text-sm font-medium text-gray-700 mb-1">
+                        Select Location
+                      </Label>
+                      <Select
+                        onValueChange={(value) => setValue('location_id', value)}
+                        value={watch('location_id')}
+                      >
+                        <SelectTrigger className={errors.location_id ? 'border-red-500' : ''}>
                           <SelectValue placeholder="Select a location" />
                         </SelectTrigger>
                         <SelectContent>
@@ -263,114 +379,148 @@ export function CreateServiceWizard({ onSuccess }: { onSuccess?: () => void }) {
                           ))}
                         </SelectContent>
                       </Select>
-                    )}
-                  />
-                  {errors.location_id && <p className="text-sm text-red-500">{errors.location_id.message}</p>}
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="space-y-4 animate-in fade-in-0 duration-300">
-                <h3 className="text-lg font-medium">Availability</h3>
-                <p className="text-sm text-muted-foreground">
-                  Set your weekly availability for this service. This will be the default schedule.
-                </p>
-
-                {/* --- The availability logic remains the same --- */}
-                {/* No changes needed here */}
-                <div className="space-y-2">
-                  {daysOfWeek.map((day) => (
-                    <div key={day} className="p-4 border rounded-md">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor={`isOpen-${day}`} className="capitalize font-medium flex-1 cursor-pointer">
-                          {day}
-                        </Label>
-                        <Controller
-                          name={`availability.${day}.isOpen`}
-                          control={control}
-                          render={({ field }) => (
-                            <div className='flex items-center space-x-2'>
-                              <span>Closed</span>
-                              <Checkbox
-                                id={`isOpen-${day}`}
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                className="data-[state=checked]:bg-green-500"
-                              />
-                              <span>Open</span>
-                            </div>
-                          )}
-                        />
-                      </div>
-                      {watch(`availability.${day}.isOpen`) && (
-                        <div className="mt-4 space-y-2">
-                          {watch(`availability.${day}.slots`).map((_, slotIndex) => (
-                            <div key={slotIndex} className="flex items-center gap-2">
-                              <Input type="time" {...register(`availability.${day}.slots.${slotIndex}.open`)} className="w-32" />
-                              <span>to</span>
-                              <Input type="time" {...register(`availability.${day}.slots.${slotIndex}.close`)} className="w-32" />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  const slots = watch(`availability.${day}.slots`);
-                                  setValue(`availability.${day}.slots`, slots.filter((_, i) => i !== slotIndex));
-                                }}
-                              >
-                                <X className="h-4 w-4 text-red-500" />
-                              </Button>
-                            </div>
-                          ))}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const slots = watch(`availability.${day}.slots`);
-                              setValue(`availability.${day}.slots`, [...slots, { open: '09:00', close: '17:00' }]);
-                            }}
-                          >
-                            <Plus className="mr-2 h-4 w-4" /> Add slot
-                          </Button>
-                        </div>
+                      {errors.location_id && (
+                        <p className="mt-1 text-sm text-red-600">{errors.location_id.message}</p>
                       )}
                     </div>
-                  ))}
+                  </div>
                 </div>
-
-              </div>
-            )}
-
-            <div className="flex justify-between pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={prevStep}
-                disabled={step === 1}
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" /> Previous
-              </Button>
-
-              {step < 3 ? (
-                <Button type="button" onClick={nextStep}>
-                  Next <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-              ) : (
-                <Button
-                  type="button" // <- important: not submit
-                  onClick={handleSubmit(processSubmit)} // call RHF submit here
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Creating...' : 'Create Service'}
-                </Button>
               )}
 
+              {step === '3' && (
+                <div>
+                  <div className="mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">Availability</h3>
+                    <p className="text-sm text-gray-500">When is this service available?</p>
+                  </div>
+
+                  <div className="space-y-6">
+                    {Object.entries(defaultAvailability).map(([day, dayData]) => (
+                      <div key={day} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`${day}-enabled`}
+                              checked={watch(`availability.${day}.isOpen`)}
+                              onCheckedChange={(checked) => {
+                                setValue(`availability.${day}.isOpen`, checked as boolean);
+                              }}
+                            />
+                            <Label htmlFor={`${day}-enabled`} className="capitalize">
+                              {day}
+                            </Label>
+                          </div>
+                        </div>
+
+                        {watch(`availability.${day}.isOpen`) && (
+                          <div className="ml-8 space-y-2">
+                            {watch(`availability.${day}.slots`).map((slot, index) => (
+                              <div key={index} className="flex items-center space-x-2">
+                                <Input
+                                  type="time"
+                                  {...register(`availability.${day}.slots.${index}.open` as const)}
+                                  className="w-32"
+                                />
+                                <span>to</span>
+                                <Input
+                                  type="time"
+                                  {...register(`availability.${day}.slots.${index}.close` as const)}
+                                  className="w-32"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    const slots = watch(`availability.${day}.slots`);
+                                    setValue(
+                                      `availability.${day}.slots`,
+                                      slots.filter((_, i) => i !== index)
+                                    );
+                                  }}
+                                >
+                                  <X className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </div>
+                            ))}
+
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="mt-2"
+                              onClick={() => {
+                                const slots = watch(`availability.${day}.slots`);
+                                setValue(`availability.${day}.slots`, [
+                                  ...slots,
+                                  { open: '09:00', close: '17:00' },
+                                ]);
+                              }}
+                            >
+                              <Plus className="mr-2 h-4 w-4" /> Add time slot
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+
+            <div className="pt-6 mt-8 border-t border-gray-200">
+              <div className="flex justify-between">
+                <div>
+                  {Number(step) > 1 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={prevStep}
+                      disabled={isLoading || isSubmitting}
+                      className="flex items-center gap-2"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Back
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {Number(step) < 3 ? (
+                    <Button
+                      type="button"
+                      onClick={nextStep}
+                      disabled={isLoading || isSubmitting}
+                      className="flex items-center gap-2"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      disabled={isLoading || isSubmitting}
+                      className="flex items-center gap-2"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Create Service
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

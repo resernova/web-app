@@ -4,6 +4,7 @@ import CatMenu from "./ui/Menu";
 import Link from "next/link";
 import { useAuth } from '@/contexts/AuthContext';
 import { PersonIcon, BuildingIcon } from '@/components/ui/Icons';
+import ProfileMenu from "./ProfileMenu";
 
 export default function NavBar() {
   const { user, profile, provider, role, signOut, loading } = useAuth();
@@ -48,19 +49,10 @@ export default function NavBar() {
             <div className="px-5 py-2 text-gray-500">Loading...</div>
           ) : user ? (
             <div className="flex items-center gap-3">
-              <Link
-                href="/profile"
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-              >
-                {role === 'business' ? (
-                  <BuildingIcon className="w-4 h-4 text-[#E76F51]" />
-                ) : (
-                  <PersonIcon className="w-4 h-4 text-[#E76F51]" />
-                )}
-                <span className="text-sm font-medium">
-                  {profile?.name || user.email}
-                </span>
-              </Link>
+              <ProfileMenu
+                profile={profile}
+                role={role as string}
+              />
               <button
                 onClick={signOut}
                 className="px-4 py-2 rounded-full bg-[#E76F51] text-white font-medium hover:bg-[#D65A42] transition-colors"

@@ -27,8 +27,8 @@ export async function fetchServiceProviderLocation(provider_id: string): Promise
         const { data, error } = await supabase
             .from('provider_locations')
             .select('*')
-            // .eq('provider_id', provider_id)
-            // .order('address', { ascending: true });
+            .eq('provider_id', provider_id)
+            .order('address', { ascending: true });
         console.log(data)
         if (error) {
             console.error('Error fetching provider locations:', error);

@@ -35,7 +35,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_admin_logs_admin_id"
+            foreignKeyName: "admin_logs_admin_id_fkey"
             columns: ["admin_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -88,14 +88,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_bookings_customer_id"
+            foreignKeyName: "reservations_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_bookings_service_id"
+            foreignKeyName: "reservations_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
@@ -136,14 +136,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_disputes_booking_id"
+            foreignKeyName: "disputes_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_disputes_provider_id"
+            foreignKeyName: "disputes_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "service_providers"
@@ -187,21 +187,21 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_notifications_booking_id"
+            foreignKeyName: "notifications_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_notifications_service_provider_id"
+            foreignKeyName: "notifications_service_provider_id_fkey"
             columns: ["service_provider_id"]
             isOneToOne: false
             referencedRelation: "service_providers"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_notifications_user_id"
+            foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -257,14 +257,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_payment_transactions_booking_id"
+            foreignKeyName: "transaction_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_payment_transactions_provider_id"
+            foreignKeyName: "transaction_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "service_providers"
@@ -287,7 +287,7 @@ export type Database = {
           contact_info?: Json | null
           coordinates?: Json | null
           created_at?: string | null
-          location_id: string
+          location_id?: string
           provider_id: string
           updated_at?: string | null
         }
@@ -302,7 +302,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_provider_locations_provider_id"
+            foreignKeyName: "provider_locations_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "service_providers"
@@ -352,14 +352,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_provider_subscriptions_plan_id"
+            foreignKeyName: "provider_subscriptions_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "subscription_plans"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_provider_subscriptions_provider_id"
+            foreignKeyName: "provider_subscriptions_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "service_providers"
@@ -370,8 +370,8 @@ export type Database = {
       refunds: {
         Row: {
           amount: number
+          costumer_id: string
           created_at: string | null
-          customer_id: string
           id: string
           payment_id: string | null
           processed_at: string | null
@@ -380,8 +380,8 @@ export type Database = {
         }
         Insert: {
           amount: number
+          costumer_id: string
           created_at?: string | null
-          customer_id: string
           id?: string
           payment_id?: string | null
           processed_at?: string | null
@@ -390,8 +390,8 @@ export type Database = {
         }
         Update: {
           amount?: number
+          costumer_id?: string
           created_at?: string | null
-          customer_id?: string
           id?: string
           payment_id?: string | null
           processed_at?: string | null
@@ -400,14 +400,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_refunds_customer_id"
-            columns: ["customer_id"]
+            foreignKeyName: "refunds_costumer_id_fkey"
+            columns: ["costumer_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_refunds_payment_id"
+            foreignKeyName: "refunds_payment_id_fkey"
             columns: ["payment_id"]
             isOneToOne: false
             referencedRelation: "payment_transactions"
@@ -445,14 +445,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_review_customer_id"
+            foreignKeyName: "reservations_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_review_service_id"
+            foreignKeyName: "reservations_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
@@ -481,7 +481,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_service_categories_sector_id"
+            foreignKeyName: "service_categories_sector_id_fkey"
             columns: ["sector_id"]
             isOneToOne: false
             referencedRelation: "service_sectors"
@@ -516,7 +516,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_service_options_service_id"
+            foreignKeyName: "service_options_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
@@ -563,7 +563,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_service_providers_service_id"
+            foreignKeyName: "service_providers_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
@@ -597,7 +597,8 @@ export type Database = {
           created_at: string | null
           date: string | null
           description: string | null
-          duration_minutes: number
+          duration: number
+          duration_unit: Database["public"]["Enums"]["duration_unit"] | null
           id: string
           location: string
           name: string
@@ -614,7 +615,8 @@ export type Database = {
           created_at?: string | null
           date?: string | null
           description?: string | null
-          duration_minutes: number
+          duration: number
+          duration_unit?: Database["public"]["Enums"]["duration_unit"] | null
           id?: string
           location: string
           name: string
@@ -631,7 +633,8 @@ export type Database = {
           created_at?: string | null
           date?: string | null
           description?: string | null
-          duration_minutes?: number
+          duration?: number
+          duration_unit?: Database["public"]["Enums"]["duration_unit"] | null
           id?: string
           location?: string
           name?: string
@@ -643,17 +646,98 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_services_category_id"
+            foreignKeyName: "services_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "service_categories"
             referencedColumns: ["category_id"]
           },
           {
-            foreignKeyName: "fk_services_provider_id"
+            foreignKeyName: "services_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff: {
+        Row: {
+          created_at: string
+          id: string
+          permissions: string[] | null
+          provider_id: string
+          status: Database["public"]["Enums"]["staff_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permissions?: string[] | null
+          provider_id: string
+          status?: Database["public"]["Enums"]["staff_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permissions?: string[] | null
+          provider_id?: string
+          status?: Database["public"]["Enums"]["staff_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_assignments: {
+        Row: {
+          assigned_at: string
+          location_id: string
+          service_id: string
+          staff_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          location_id: string
+          service_id: string
+          staff_id: string
+        }
+        Update: {
+          assigned_at?: string
+          location_id?: string
+          service_id?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_assignments_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "provider_locations"
+            referencedColumns: ["location_id"]
+          },
+          {
+            foreignKeyName: "staff_assignments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_assignments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
             referencedColumns: ["id"]
           },
         ]
@@ -698,6 +782,7 @@ export type Database = {
           phone_number: string | null
           preferences: Json | null
           profile_picture: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string | null
         }
         Insert: {
@@ -709,6 +794,7 @@ export type Database = {
           phone_number?: string | null
           preferences?: Json | null
           profile_picture?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
         }
         Update: {
@@ -720,6 +806,7 @@ export type Database = {
           phone_number?: string | null
           preferences?: Json | null
           profile_picture?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
         }
         Relationships: []
@@ -748,14 +835,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_wishlist_customer_id"
+            foreignKeyName: "reservations_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_wishlist_service_id"
+            foreignKeyName: "reservations_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
@@ -768,10 +855,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_manage_booking: {
+        Args: { p_booking_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       booking_status: "pending" | "confirmed" | "canceled" | "completed"
+      duration_unit: "minutes" | "hours" | "days"
       payment_status: "pending" | "done" | "no_payment"
       payment_type: "online" | "cash"
       service_type:
@@ -779,7 +870,8 @@ export type Database = {
         | "culinary experiences"
         | "Tours and Activities"
         | "Aesthetic and Well-being Services"
-      user_role: "admin" | "business" | "customer"
+      staff_status: "pending_invitation" | "active" | "inactive"
+      user_role: "admin" | "business" | "customer" | "staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -908,6 +1000,7 @@ export const Constants = {
   public: {
     Enums: {
       booking_status: ["pending", "confirmed", "canceled", "completed"],
+      duration_unit: ["minutes", "hours", "days"],
       payment_status: ["pending", "done", "no_payment"],
       payment_type: ["online", "cash"],
       service_type: [
@@ -916,7 +1009,8 @@ export const Constants = {
         "Tours and Activities",
         "Aesthetic and Well-being Services",
       ],
-      user_role: ["admin", "business", "customer"],
+      staff_status: ["pending_invitation", "active", "inactive"],
+      user_role: ["admin", "business", "customer", "staff"],
     },
   },
 } as const
